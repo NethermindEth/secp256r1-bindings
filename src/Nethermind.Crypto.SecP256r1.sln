@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethermind.Crypto.SecP256r1", "Nethermind.Crypto.SecP256r1\Nethermind.Crypto.SecP256r1.csproj", "{AC9A0C30-E6E5-4B23-8BEB-131873AF67CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethermind.Crypto.SecP256r1.Tests", "Nethermind.Crypto.SecP256r1.Tests\Nethermind.Crypto.SecP256r1.Tests.csproj", "{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8A12ACE1-082B-49EF-9B9D-822ABFABAD41}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC9A0C30-E6E5-4B23-8BEB-131873AF67CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC9A0C30-E6E5-4B23-8BEB-131873AF67CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC9A0C30-E6E5-4B23-8BEB-131873AF67CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC9A0C30-E6E5-4B23-8BEB-131873AF67CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
