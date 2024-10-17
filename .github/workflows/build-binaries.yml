@@ -67,7 +67,7 @@ jobs:
           name: win-x64
           path: runtimes/win-x64/native
 
-  build-osx:
+  build-osx-arm64:
     runs-on: macos-latest
 
     steps:
