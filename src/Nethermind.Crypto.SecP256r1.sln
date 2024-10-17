@@ -10,6 +10,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{81912D64-EEC5-4BC1-B932-8EB8F89B6D02}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{78EDEA70-6178-450A-AB2A-AF10E7758F05}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\build-osx-arm64.yml = ..\.github\workflows\build-osx-arm64.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +31,9 @@ Global
 		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B53B5422-EB26-4F2F-8D0A-FB865D479CFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{81912D64-EEC5-4BC1-B932-8EB8F89B6D02} = {8A12ACE1-082B-49EF-9B9D-822ABFABAD41}
+		{78EDEA70-6178-450A-AB2A-AF10E7758F05} = {81912D64-EEC5-4BC1-B932-8EB8F89B6D02}
 	EndGlobalSection
 EndGlobal
