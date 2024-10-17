@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-x64
-          path: runtimes
+          path: runtimes/linux-x64/native
 
   build-win-x64:
     runs-on: windows-latest
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: win-x64
-          path: runtimes
+          path: runtimes/win-x64/native
 
   build-osx:
     runs-on: macos-latest
@@ -103,5 +103,5 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: macos-latest
-          path: runtimes
+          name: osx-arm64
+          path: runtimes/osx-arm64/native
