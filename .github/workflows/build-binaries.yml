@@ -5,8 +5,44 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sandervocke/setup-qemu-container@v1
+        with:
+          container: arm64v8/alpine
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        shell: run-in-container.sh {0}
+        with:
+          go-version: '1.23.2'
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        shell: run-in-container.sh {0}
+        with:
+          dotnet-version: '8.0.403'
+      - run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/linux-arm64/native/secp256r1.so src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os linux-arm64
+        shell: run-in-container.sh {0}
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        shell: run-in-container.sh {0}
+        with:
+          name: linux-arm64
+          path: runtimes/linux-arm64/native
+
   build-linux-x64:
     runs-on: ubuntu-latest
+    if: false
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +73,7 @@ jobs:
 
   build-win-x64:
     runs-on: windows-latest
+    if: false
 
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +106,7 @@ jobs:
 
   build-osx:
     runs-on: macos-latest
+    if: false
 
     steps:
       - uses: actions/checkout@v4
