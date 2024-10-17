@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{8191
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{78EDEA70-6178-450A-AB2A-AF10E7758F05}"
 	ProjectSection(SolutionItems) = preProject
-		..\.github\workflows\build-osx-arm64.yml = ..\.github\workflows\build-osx-arm64.yml
+		..\.github\workflows\build-binaries.yml = ..\.github\workflows\build-binaries.yml
 	EndProjectSection
 EndProject
 Global

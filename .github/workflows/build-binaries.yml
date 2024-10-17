@@ -1,0 +1,107 @@
+name: Build binaries
+on: workflow_dispatch
+
+env:
+  DOTNET_NOLOGO: true
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+      - name: Check Go
+        run: go version
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.403'
+      - name: Check dotnet
+        run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/linux-x64/native/secp256r1.so src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os linux-x64
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: runtimes
+
+  build-win-x64:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+      - name: Check Go
+        run: go version
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.403'
+      - name: Check dotnet
+        run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: |
+          del runtimes\win-x64\native\secp256r1.dll >nul 2>&1
+          go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/win-x64/native/secp256r1.dll src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os win-x64
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: runtimes
+
+  build-osx:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+      - name: Check Go
+        run: go version
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.403'
+      - name: Check dotnet
+        run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/osx-arm64/native/secp256r1.dylib src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os osx-arm64
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-latest
+          path: runtimes
