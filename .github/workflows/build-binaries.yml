@@ -15,15 +15,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.2'
-      - name: Check Go
-        run: go version
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.403'
-      - name: Check dotnet
-        run: dotnet --version
+      - run: dotnet --version
 
       - name: Build Go ECDSA
         run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/linux-x64/native/secp256r1.so src/go-ecdsa/main.go
@@ -48,15 +45,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.2'
-      - name: Check Go
-        run: go version
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.403'
-      - name: Check dotnet
-        run: dotnet --version
+      - run: dotnet --version
 
       - name: Build Go ECDSA
         run: |
@@ -83,15 +77,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.2'
-      - name: Check Go
-        run: go version
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.403'
-      - name: Check dotnet
-        run: dotnet --version
+      - run: dotnet --version
 
       - name: Build Go ECDSA
         run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/osx-arm64/native/secp256r1.dylib src/go-ecdsa/main.go
