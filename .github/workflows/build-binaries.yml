@@ -35,38 +35,6 @@ jobs:
           name: linux-x64
           path: runtimes/linux-x64/native
 
-  build-win-x64:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.2'
-
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.403'
-      - run: dotnet --version
-
-      - name: Build Go ECDSA
-        run: |
-          del runtimes\win-x64\native\secp256r1.dll >nul 2>&1
-          go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/win-x64/native/secp256r1.dll src/go-ecdsa/main.go
-
-      - name: Test bindings
-        run: dotnet test --os win-x64
-        working-directory: ./src
-
-      - name: Upload binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: win-x64
-          path: runtimes/win-x64/native
-
   build-osx-arm64:
     runs-on: macos-latest
 
@@ -126,3 +94,35 @@ jobs:
         with:
           name: osx-x64
           path: runtimes/osx-x64/native
+
+  build-win-x64:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.403'
+      - run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: |
+          del runtimes\win-x64\native\secp256r1.dll >nul 2>&1
+          go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/win-x64/native/secp256r1.dll src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os win-x64
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: runtimes/win-x64/native
