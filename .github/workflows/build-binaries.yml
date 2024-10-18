@@ -96,3 +96,33 @@ jobs:
         with:
           name: osx-arm64
           path: runtimes/osx-arm64/native
+
+  build-osx-x64:
+    runs-on: macos-13
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.403'
+      - run: dotnet --version
+
+      - name: Build Go ECDSA
+        run: go build -ldflags="-s -w" -buildmode=c-shared -o runtimes/osx-x64/native/secp256r1.dylib src/go-ecdsa/main.go
+
+      - name: Test bindings
+        run: dotnet test --os osx-x64
+        working-directory: ./src
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: osx-x64
+          path: runtimes/osx-x64/native
