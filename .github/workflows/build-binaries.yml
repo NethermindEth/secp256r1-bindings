@@ -1,5 +1,18 @@
-name: Build binaries
-on: workflow_dispatch
+name: Build & deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        default: false
+        description: Publish package
+        required: false
+        type: boolean
+      pack:
+        default: false
+        description: Package and upload as an artifact
+        required: false
+        type: boolean
 
 env:
   DOTNET_NOLOGO: true
@@ -34,6 +47,7 @@ jobs:
         with:
           name: linux-arm64
           path: runtimes/linux-arm64/native
+          if-no-files-found: error
 
   build-linux-x64:
     runs-on: ubuntu-latest
@@ -64,6 +78,7 @@ jobs:
         with:
           name: linux-x64
           path: runtimes/linux-x64/native
+          if-no-files-found: error
 
   build-osx-arm64:
     runs-on: macos-latest
@@ -94,6 +109,7 @@ jobs:
         with:
           name: osx-arm64
           path: runtimes/osx-arm64/native
+          if-no-files-found: error
 
   build-osx-x64:
     runs-on: macos-13
@@ -124,6 +140,7 @@ jobs:
         with:
           name: osx-x64
           path: runtimes/osx-x64/native
+          if-no-files-found: error
 
   build-win-x64:
     runs-on: windows-latest
@@ -156,3 +173,58 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64/native
+          if-no-files-found: error
+
+  package-nuget:
+    runs-on: ubuntu-latest
+    needs: [build-linux-arm64, build-linux-x64, build-osx-arm64, build-osx-x64, build-win-x64]
+    env:
+      BUILD_CONFIG: release
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download native binaries
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: src/Nethermind.Crypto.SecP256r1/
+
+      - name: List downloaded artifacts
+        working-directory: src/Nethermind.Crypto.SecP256r1/runtimes
+        run: find . -type f
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+
+      - name: Install dependencies
+        working-directory: src
+        run: dotnet restore
+
+      - name: Build
+        working-directory: src/Nethermind.Crypto.SecP256r1
+        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore
+
+      - name: Test
+        working-directory: src/Nethermind.Crypto.SecP256r1.Tests
+        run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
+
+      - name: Create package
+        if: ${{ inputs.pack || inputs.publish }}
+        working-directory: src/Nethermind.Crypto.SecP256r1
+        run: |
+          dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
+
+      - name: Upload package artifact
+        if: ${{ inputs.pack }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: src/Nethermind.Crypto.SecP256r1/bin/${{ env.BUILD_CONFIG }}/*.nupkg
+          if-no-files-found: error
+
+      - name: Publish package
+        if: ${{ inputs.publish }}
+        working-directory: src/Nethermind.Crypto.SecP256r1
+        run: |
+          dotnet nuget push bin/${{ env.BUILD_CONFIG }}/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
