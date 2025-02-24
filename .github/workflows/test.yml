@@ -1,0 +1,97 @@
+name: Test / Publish
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish:
+        default: false
+        description: Publish package
+        required: false
+        type: boolean
+
+jobs:
+  build:
+    name: Build native libraries
+    strategy:
+      matrix:
+        include:
+          - library: libsecp256r1.so
+            os: ubuntu-22.04-arm
+            rid: linux-arm64
+          - library: libsecp256r1.so
+            os: ubuntu-22.04
+            rid: linux-x64
+          - library: libsecp256r1.dylib
+            os: macos-latest
+            rid: osx-arm64
+          - library: libsecp256r1.dylib
+            os: macos-13
+            rid: osx-x64
+          - library: secp256r1.dll
+            os: windows-latest
+            rid: win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build library
+        working-directory: src
+        run: go build -ldflags="-s -w" -buildmode=c-shared -o Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }} go-ecdsa/main.go
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+      - name: Test bindings
+        working-directory: src/Nethermind.Crypto.SecP256r1.Tests
+        run: dotnet test -c release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: src/Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
+          retention-days: 2
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: inputs.publish
+    env:
+      BUILD_CONFIG: release
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: src/Nethermind.Crypto.SecP256r1/runtimes
+      - name: Move artifacts
+        working-directory: src/Nethermind.Crypto.SecP256r1/runtimes
+        run: |
+          mv -f linux-arm64/libsecp256r1.so linux-arm64/native/libsecp256r1.so
+          mv -f linux-x64/libsecp256r1.so linux-x64/native/libsecp256r1.so
+          mv -f osx-arm64/libsecp256r1.dylib osx-arm64/native/libsecp256r1.dylib
+          mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
+          mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+      - name: Install dependencies
+        working-directory: src
+        run: dotnet restore
+      - name: Build
+        working-directory: src/Nethermind.Crypto.SecP256r1
+        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore
+      - name: Test
+        working-directory: src/Nethermind.Crypto.SecP256r1.Tests
+        run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
+      - name: Publish
+        working-directory: src/Nethermind.Crypto.SecP256r1
+        run: |
+          dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
+          dotnet nuget push bin/${{ env.BUILD_CONFIG }}/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
