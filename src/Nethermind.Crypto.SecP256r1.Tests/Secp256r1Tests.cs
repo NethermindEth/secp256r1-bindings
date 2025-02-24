@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Demerzel Solutions Limited
+// SPDX-License-Identifier: LGPL-3.0-only
+
 using System.Security.Cryptography;
-using FluentAssertions;
 using NUnit.Framework;
 
 namespace Nethermind.Crypto.Tests;
@@ -51,7 +53,8 @@ public class Secp256r1Tests
     public void Verifies_static_signature(string input, bool isValid)
     {
         var bytes = Convert.FromHexString(input);
-        Secp256r1.VerifySignature(bytes).Should().Be(isValid);
+
+        Assert.That(Secp256r1.VerifySignature(bytes), Is.EqualTo(isValid));
     }
 
     [Test]
@@ -85,12 +88,10 @@ public class Secp256r1Tests
             using var temp = ECDsa.Create(new ECParameters
             {
                 Curve = ECCurve.NamedCurves.nistP256,
-                Q = {X = parameters.Q.X, Y = parameters.Q.Y}
+                Q = { X = parameters.Q.X, Y = parameters.Q.Y }
             });
 
-            Secp256r1.VerifySignature(input).Should().BeTrue(
-                $"input #{i} is 0x{Convert.ToHexString(input)}."
-            );
+            Assert.That(Secp256r1.VerifySignature(input), Is.True, $"input #{i} is 0x{Convert.ToHexString(input)}.");
         }
     }
 
@@ -103,6 +104,7 @@ public class Secp256r1Tests
     public void Returns_false_on_invalid_length(int length)
     {
         var bytes = Enumerable.Range(0, length).Select(i => (byte)i).ToArray();
-        Secp256r1.VerifySignature(bytes).Should().BeFalse();
+
+        Assert.That(Secp256r1.VerifySignature(bytes), Is.False);
     }
 }
