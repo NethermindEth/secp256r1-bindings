@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2024 Demerzel Solutions Limited
+// SPDX-FileCopyrightText: 2025 Demerzel Solutions Limited
 // SPDX-License-Identifier: MIT
 
 using System.Buffers;
@@ -14,9 +14,9 @@ public static partial class Secp256r1
 
     static Secp256r1() => SetLibraryFallbackResolver();
 
-    private struct GoSlice(IntPtr data, long len)
+    private struct GoSlice(nint data, long len)
     {
-        public IntPtr Data = data;
+        public nint Data = data;
         public long Len = len, Cap = len;
     }
 
@@ -34,13 +34,13 @@ public static partial class Secp256r1
     /// <c>y</c> - y coordinate of the public key point, 32 bytes.
     /// </param>
     /// <returns>
-    /// <c>true</c> if input is formed correctly or signature is valid,
+    /// <c>true</c> if input is formed correctly and the signature is valid,
     /// <c>false</c> otherwise.
     /// </returns>
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
     {
         using MemoryHandle pin = input.Pin();
-        GoSlice slice = new((IntPtr) pin.Pointer, input.Length);
+        GoSlice slice = new((nint)pin.Pointer, input.Length);
         return VerifyBytes(slice) != 0;
     }
 
@@ -51,18 +51,18 @@ public static partial class Secp256r1
         AssemblyLoadContext.GetLoadContext(assembly)!.ResolvingUnmanagedDll += (context, name) =>
         {
             if (context != assembly || !LibraryName.Equals(name, StringComparison.Ordinal))
-                return IntPtr.Zero;
+                return nint.Zero;
 
             string platform;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                name = $"{name}.so";
+                name = $"lib{name}.so";
                 platform = "linux";
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                name = $"{name}.dylib";
+                name = $"lib{name}.dylib";
                 platform = "osx";
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
