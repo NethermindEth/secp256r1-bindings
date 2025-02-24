@@ -34,7 +34,7 @@ public static partial class Secp256r1
     /// <c>y</c> - y coordinate of the public key point, 32 bytes.
     /// </param>
     /// <returns>
-    /// <c>true</c> if input is formed correctly or signature is valid,
+    /// <c>true</c> if input is formed correctly and the signature is valid,
     /// <c>false</c> otherwise.
     /// </returns>
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
