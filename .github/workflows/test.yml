@@ -48,7 +48,7 @@ jobs:
         uses: actions/setup-dotnet@v4
       - name: Test bindings
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet test -c release
+        run: dotnet run -c release
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -86,10 +86,10 @@ jobs:
         run: dotnet restore
       - name: Build
         working-directory: src/Nethermind.Crypto.SecP256r1
-        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore
+        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore -p:Commit=$GITHUB_SHA
       - name: Test
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
+        run: dotnet run -c ${{ env.BUILD_CONFIG }} --no-restore
       - name: Publish
         working-directory: src/Nethermind.Crypto.SecP256r1
         run: |
