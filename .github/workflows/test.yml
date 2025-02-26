@@ -48,7 +48,7 @@ jobs:
         uses: actions/setup-dotnet@v4
       - name: Test bindings
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet test -c release
+        run: dotnet run -c release
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
