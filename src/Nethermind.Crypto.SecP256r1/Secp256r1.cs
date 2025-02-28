@@ -14,10 +14,10 @@ public static partial class Secp256r1
 
     static Secp256r1() => SetLibraryFallbackResolver();
 
-    private struct GoSlice(nint data, long len)
+    private readonly struct GoSlice(nint data, long len)
     {
-        public nint Data = data;
-        public long Len = len, Cap = len;
+        public readonly nint Data = data;
+        public readonly long Len = len, Cap = len;
     }
 
     [LibraryImport(LibraryName, SetLastError = true)]
