@@ -14,14 +14,8 @@ public static partial class Secp256r1
 
     static Secp256r1() => SetLibraryFallbackResolver();
 
-    private readonly struct GoSlice(nint data, long len)
-    {
-        public readonly nint Data = data;
-        public readonly long Len = len, Cap = len;
-    }
-
     [LibraryImport(LibraryName, SetLastError = true)]
-    private static partial byte VerifyBytes(GoSlice hash);
+    private static unsafe partial byte VerifyBytes(byte* data, int length);
 
     /// <summary>
     /// Checks that provided input represent correct secp256r1 signature.
@@ -40,8 +34,7 @@ public static partial class Secp256r1
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
     {
         using MemoryHandle pin = input.Pin();
-        GoSlice slice = new((nint)pin.Pointer, input.Length);
-        return VerifyBytes(slice) != 0;
+        return VerifyBytes((byte*) pin.Pointer, input.Length) != 0;
     }
 
     private static void SetLibraryFallbackResolver()
