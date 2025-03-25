@@ -261,10 +261,6 @@ if(FIPS_DELOCATE OR NOT OPENSSL_NO_ASM)
   endif()
 endif()
 
-add_subdirectory(ssl/test)
-add_subdirectory(util/fipstools)
-add_subdirectory(util/fipstools/acvp/modulewrapper)
-
 if(OPENSSL_ASM)
   set(CRYPTO_SOURCES_ASM_USED ${CRYPTO_SOURCES_ASM})
   set(BCM_SOURCES_ASM_USED ${BCM_SOURCES_ASM})
