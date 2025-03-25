@@ -45,6 +45,7 @@ jobs:
         with:
           submodules: true
       - name: Configure build
+        shell: bash
         run: |
           mv -f src/CMakeLists.txt src/boringssl/CMakeLists.txt
           mv -f src/exports.def src/boringssl/exports.def
