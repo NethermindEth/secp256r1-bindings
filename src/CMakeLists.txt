@@ -15,7 +15,7 @@
 # This is modified from the original BoringSSL script to:
 # - build crypto module only;
 # - exclude tests, validation, and most of the configuration options;
-# - do not export all the OPENSSL_EXPORT methods, only ones specified in exports.def/exports.lds.
+# - do not export all the OPENSSL_EXPORT methods, only ones specified in exports.* files.
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -200,6 +200,8 @@ endif()
 
 if(WIN32)
   set (CMAKE_SHARED_LINKER_FLAGS "/DEF:../exports.def")
+elseif(CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+  set (CMAKE_SHARED_LINKER_FLAGS "-Wl,-exported_symbols_list,../exports.exp")
 else()
   set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=../exports.lds")
 endif()
