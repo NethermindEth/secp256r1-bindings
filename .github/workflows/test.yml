@@ -50,12 +50,17 @@ jobs:
           git mv -f -k src/exports.def src/boringssl/exports.def
           git mv -f -k src/exports.map src/boringssl/exports.map
       - name: Build library
-        #run: go build -ldflags="-s -w" -buildmode=c-shared -o Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }} go-ecdsa/main.go
-        working-directory: src/boringssl
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          source-dir: src/boringssl
+          generator: Ninja
+          options: |
+            CMAKE_BUILD_TYPE=Release
+            BUILD_SHARED_LIBS=1
+      - name: Move built binary
+        working-directory: src
         run: |
-          cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=1
-          ninja -C build crypto
-          git mv -f -k build/${{ matrix.source }} ../Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
+          git mv -f -k boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
       - name: Test bindings
