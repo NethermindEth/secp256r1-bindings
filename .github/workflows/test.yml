@@ -44,8 +44,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      # - name: Setup MSVC
-      #   uses: ilammy/msvc-dev-cmd@v1
       - name: Configure build
         run: |
           git mv -f -k src/CMakeLists.txt src/boringssl/CMakeLists.txt
@@ -53,11 +51,11 @@ jobs:
           git mv -f -k src/exports.map src/boringssl/exports.map
       - name: Build library
         #run: go build -ldflags="-s -w" -buildmode=c-shared -o Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }} go-ecdsa/main.go
-        working-directory: src
+        working-directory: src/boringssl
         run: |
           cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=1
           ninja -C build crypto
-          git mv -f -k build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
+          git mv -f -k build/${{ matrix.source }} ../Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
       - name: Test bindings
