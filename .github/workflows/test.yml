@@ -66,8 +66,8 @@ jobs:
             BUILD_SHARED_LIBS=1
       - name: Move built binary
         working-directory: src
-        run: |
-          git mv -f -k boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
+        shell: bash
+        run: mv -f boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
       - name: Test bindings
