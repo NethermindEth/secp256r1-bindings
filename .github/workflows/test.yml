@@ -53,6 +53,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Setup NASM
+        uses: ilammy/setup-nasm@v1
       - name: Build library
         uses: threeal/cmake-action@v2.1.0
         with:
