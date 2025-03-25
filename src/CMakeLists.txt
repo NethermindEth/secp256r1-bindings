@@ -206,6 +206,11 @@ else()
   set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=../exports.lds")
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+endif()
+
 # pthread_rwlock_t on Linux requires a feature flag. We limit this to Linux
 # because, on Apple platforms, it instead disables APIs we use. See compat(5)
 # and sys/cdefs.h. Reportedly, FreeBSD also breaks when this is set. See
