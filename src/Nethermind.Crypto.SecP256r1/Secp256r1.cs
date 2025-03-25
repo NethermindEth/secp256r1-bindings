@@ -1,21 +1,91 @@
 // SPDX-FileCopyrightText: 2025 Demerzel Solutions Limited
 // SPDX-License-Identifier: MIT
 
-using System.Buffers;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.Loader;
-
 namespace Nethermind.Crypto;
 
-public static partial class Secp256r1
+public static class Secp256r1
 {
-    private const string LibraryName = "secp256r1";
+    /// <returns>
+    /// New key pointer if successfully created,
+    /// <c>0</c> if (x,y) coordinates are not on the curve,
+    /// and negative value in case of other errors.
+    /// </returns>
+    private static unsafe nint TryCreateECKey(byte* x, byte* y)
+    {
+        nint key = 0, bx = 0, by = 0, pt = 0;
+        var success = false;
 
-    static Secp256r1() => SetLibraryFallbackResolver();
+        try
+        {
+            key = BoringSSL.EC_KEY_new_by_curve_name(BoringSSL.NID_X9_62_prime256v1);
+            if (key == 0)
+                return -1;
 
-    [LibraryImport(LibraryName, SetLastError = true)]
-    private static unsafe partial byte VerifyBytes(byte* data, int length);
+            var group = BoringSSL.EC_KEY_get0_group(key);
+
+            pt = BoringSSL.EC_POINT_new(group);
+            if (pt == 0)
+                return -2;
+
+            bx = BoringSSL.BN_bin2bn(x, 32, 0);
+            by = BoringSSL.BN_bin2bn(y, 32, 0);
+            if (bx == 0 || by == 0)
+                return -3;
+
+            if (BoringSSL.EC_POINT_set_affine_coordinates_GFp(group, pt, bx, by, 0) == 0)
+                return 0;
+
+            if (BoringSSL.EC_KEY_set_public_key(key, pt) == 0)
+                return -4;
+
+            success = true;
+            return key;
+        }
+        finally
+        {
+            if (!success && key != 0) BoringSSL.EC_KEY_free(key);
+            if (bx != 0) BoringSSL.BN_free(bx);
+            if (by != 0) BoringSSL.BN_free(by);
+            if (pt != 0) BoringSSL.EC_POINT_free(pt);
+        }
+    }
+
+    // Encodes signature (r,s) in DER format
+    // AsnWriter allocates too much
+    private static ReadOnlySpan<byte> EncodeSignature(ReadOnlySpan<byte> r, ReadOnlySpan<byte> s, Span<byte> buffer)
+    {
+        buffer[0] = 0x30; // SEQUENCE OF
+
+        var index = 2;
+        index += EncodeUnsignedInteger(r, buffer[index..]);
+        index += EncodeUnsignedInteger(s, buffer[index..]);
+
+        buffer[1] = (byte)(index - 2);  // SEQUENCE OF length
+
+        return buffer[..index];
+    }
+
+    private static int EncodeUnsignedInteger(ReadOnlySpan<byte> value, Span<byte> buffer)
+    {
+        // Skip zeroes
+        var valIndex = 0;
+        while (value[valIndex] == 0 && valIndex < value.Length - 1) valIndex++;
+        value = value[valIndex..];
+
+        buffer[0] = 0x02; // INTEGER;
+        buffer[1] = (byte)value.Length; // INTEGER length
+        var buffIndex = 2;
+
+        // Add leading zero if number is negative
+        if ((value[0] & 0x80) != 0)
+        {
+            buffer[1]++;
+            buffer[buffIndex++] = 0;
+        }
+
+        value.CopyTo(buffer[buffIndex..]);
+        return buffIndex + value.Length;
+    }
 
     /// <summary>
     /// Checks that provided input represent correct secp256r1 signature.
@@ -33,42 +103,27 @@ public static partial class Secp256r1
     /// </returns>
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
     {
-        using MemoryHandle pin = input.Pin();
-        return VerifyBytes((byte*) pin.Pointer, input.Length) != 0;
-    }
+        if (input.Length != 160)
+            return false;
 
-    private static void SetLibraryFallbackResolver()
-    {
-        Assembly assembly = typeof(Secp256r1).Assembly;
-
-        AssemblyLoadContext.GetLoadContext(assembly)!.ResolvingUnmanagedDll += (context, name) =>
+        nint key = 0;
+        try
         {
-            if (context != assembly || !LibraryName.Equals(name, StringComparison.Ordinal))
-                return nint.Zero;
+            Span<byte> buffer = stackalloc byte[2 + 2 * (2 + 32 + 1)]; // Max possible size when DER-encoded
+            ReadOnlySpan<byte> signature = EncodeSignature(input.Span[32..64], input.Span[64..96], buffer);
 
-            string platform;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            fixed (byte* ptr = input.Span)
+            fixed (byte* sig = signature)
             {
-                name = $"lib{name}.so";
-                platform = "linux";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                name = $"lib{name}.dylib";
-                platform = "osx";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                name = $"{name}.dll";
-                platform = "win";
-            }
-            else
-                throw new PlatformNotSupportedException();
+                key = TryCreateECKey(ptr + 96, ptr + 128);
+                if (key <= 0) return false;
 
-            var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-
-            return NativeLibrary.Load($"runtimes/{platform}-{arch}/native/{name}", context, DllImportSearchPath.AssemblyDirectory);
-        };
+                return BoringSSL.ECDSA_verify(0, ptr, 32, sig, signature.Length, key) != 0;
+            }
+        }
+        finally
+        {
+            if (key > 0) BoringSSL.EC_KEY_free(key);
+        }
     }
 }

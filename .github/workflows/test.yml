@@ -19,31 +19,45 @@ jobs:
       matrix:
         include:
           - library: libsecp256r1.so
+            source: libcrypto.so
             os: ubuntu-22.04-arm
             rid: linux-arm64
           - library: libsecp256r1.so
+            source: libcrypto.so
             os: ubuntu-22.04
             rid: linux-x64
           - library: libsecp256r1.dylib
+            source: libcrypto.dylib
             os: macos-latest
             rid: osx-arm64
           - library: libsecp256r1.dylib
+            source: libcrypto.dylib
             os: macos-13
             rid: osx-x64
           - library: secp256r1.dll
+            source: crypto.dll
             os: windows-latest
             rid: win-x64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
         with:
-          go-version: stable
+          submodules: true
+      # - name: Setup MSVC
+      #   uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure build
+        run: |
+          git mv -f -k src/CMakeLists.txt src/boringssl/CMakeLists.txt
+          git mv -f -k src/exports.def src/boringssl/exports.def
+          git mv -f -k src/exports.map src/boringssl/exports.map
       - name: Build library
+        #run: go build -ldflags="-s -w" -buildmode=c-shared -o Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }} go-ecdsa/main.go
         working-directory: src
-        run: go build -ldflags="-s -w" -buildmode=c-shared -o Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }} go-ecdsa/main.go
+        run: |
+          cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=1
+          ninja -C build crypto
+          git mv -f -k build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
       - name: Test bindings
