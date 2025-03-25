@@ -49,6 +49,8 @@ jobs:
           git mv -f -k src/CMakeLists.txt src/boringssl/CMakeLists.txt
           git mv -f -k src/exports.def src/boringssl/exports.def
           git mv -f -k src/exports.map src/boringssl/exports.map
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
       - name: Build library
         uses: threeal/cmake-action@v2.1.0
         with:
