@@ -3,7 +3,7 @@
 [![Test](https://github.com/nethermindeth/secp256r1-bindings/actions/workflows/test.yml/badge.svg)](https://github.com/nethermindeth/secp256r1-bindings/actions/workflows/test.yml)
 [![Nethermind.Crypto.SecP256r1](https://img.shields.io/nuget/v/Nethermind.Crypto.SecP256r1)](https://www.nuget.org/packages/Nethermind.Crypto.SecP256r1)
 
-C# bindings for the SecP256r1 (P-256) signature verification using [BoringSSL](https://github.com/google/boringssl) crypto module.
+C# bindings for the [BoringSSL](https://github.com/google/boringssl) ECDSA signature verification.
 
 ### Build
 
