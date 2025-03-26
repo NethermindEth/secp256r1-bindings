@@ -17,25 +17,25 @@ public static class Secp256r1
 
         try
         {
-            key = BoringSSL.EC_KEY_new_by_curve_name(BoringSSL.NID_X9_62_prime256v1);
+            key = BoringSsl.EC_KEY_new_by_curve_name(BoringSsl.NID_X9_62_prime256v1);
             if (key == 0)
                 return -1;
 
-            var group = BoringSSL.EC_KEY_get0_group(key);
+            var group = BoringSsl.EC_KEY_get0_group(key);
 
-            pt = BoringSSL.EC_POINT_new(group);
+            pt = BoringSsl.EC_POINT_new(group);
             if (pt == 0)
                 return -2;
 
-            bx = BoringSSL.BN_bin2bn(x, 32, 0);
-            by = BoringSSL.BN_bin2bn(y, 32, 0);
+            bx = BoringSsl.BN_bin2bn(x, 32, 0);
+            by = BoringSsl.BN_bin2bn(y, 32, 0);
             if (bx == 0 || by == 0)
                 return -3;
 
-            if (BoringSSL.EC_POINT_set_affine_coordinates_GFp(group, pt, bx, by, 0) == 0)
+            if (BoringSsl.EC_POINT_set_affine_coordinates_GFp(group, pt, bx, by, 0) == 0)
                 return 0;
 
-            if (BoringSSL.EC_KEY_set_public_key(key, pt) == 0)
+            if (BoringSsl.EC_KEY_set_public_key(key, pt) == 0)
                 return -4;
 
             success = true;
@@ -43,10 +43,10 @@ public static class Secp256r1
         }
         finally
         {
-            if (!success && key != 0) BoringSSL.EC_KEY_free(key);
-            if (bx != 0) BoringSSL.BN_free(bx);
-            if (by != 0) BoringSSL.BN_free(by);
-            if (pt != 0) BoringSSL.EC_POINT_free(pt);
+            if (!success && key != 0) BoringSsl.EC_KEY_free(key);
+            if (bx != 0) BoringSsl.BN_free(bx);
+            if (by != 0) BoringSsl.BN_free(by);
+            if (pt != 0) BoringSsl.EC_POINT_free(pt);
         }
     }
 
@@ -118,12 +118,12 @@ public static class Secp256r1
                 key = TryCreateECKey(ptr + 96, ptr + 128);
                 if (key <= 0) return false;
 
-                return BoringSSL.ECDSA_verify(0, ptr, 32, sig, signature.Length, key) != 0;
+                return BoringSsl.ECDSA_verify(0, ptr, 32, sig, signature.Length, key) != 0;
             }
         }
         finally
         {
-            if (key > 0) BoringSSL.EC_KEY_free(key);
+            if (key > 0) BoringSsl.EC_KEY_free(key);
         }
     }
 }

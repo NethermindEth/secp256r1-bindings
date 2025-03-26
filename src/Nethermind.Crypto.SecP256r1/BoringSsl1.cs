@@ -8,10 +8,10 @@ using System.Runtime.Loader;
 
 namespace Nethermind.Crypto;
 
-public static partial class BoringSSL
+public static partial class BoringSsl
 {
     private const string LibraryName = "secp256r1";
-    static BoringSSL() => SetLibraryFallbackResolver();
+    static BoringSsl() => SetLibraryFallbackResolver();
 
     private static void SetLibraryFallbackResolver()
     {
