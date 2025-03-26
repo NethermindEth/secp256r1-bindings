@@ -5,6 +5,18 @@ namespace Nethermind.Crypto;
 
 public static class Secp256r1
 {
+    private static class Position
+    {
+        public const int Hash = 0;
+        public const int SigR = Hash + ElementSize;
+        public const int SigS = SigR + ElementSize;
+        public const int KeyX = SigS + ElementSize;
+        public const int KeyY = KeyX + ElementSize;
+        public const int End = KeyY + ElementSize;
+    }
+
+    private const int ElementSize = 32;
+
     /// <returns>
     /// New key pointer if successfully created,
     /// <c>0</c> if (x,y) coordinates are not on the curve,
@@ -50,43 +62,6 @@ public static class Secp256r1
         }
     }
 
-    // Encodes signature (r,s) in DER format
-    // AsnWriter allocates too much
-    private static ReadOnlySpan<byte> EncodeSignature(ReadOnlySpan<byte> r, ReadOnlySpan<byte> s, Span<byte> buffer)
-    {
-        buffer[0] = 0x30; // SEQUENCE OF
-
-        var index = 2;
-        index += EncodeUnsignedInteger(r, buffer[index..]);
-        index += EncodeUnsignedInteger(s, buffer[index..]);
-
-        buffer[1] = (byte)(index - 2);  // SEQUENCE OF length
-
-        return buffer[..index];
-    }
-
-    private static int EncodeUnsignedInteger(ReadOnlySpan<byte> value, Span<byte> buffer)
-    {
-        // Skip zeroes
-        var valIndex = 0;
-        while (value[valIndex] == 0 && valIndex < value.Length - 1) valIndex++;
-        value = value[valIndex..];
-
-        buffer[0] = 0x02; // INTEGER;
-        buffer[1] = (byte)value.Length; // INTEGER length
-        var buffIndex = 2;
-
-        // Add leading zero if number is negative
-        if ((value[0] & 0x80) != 0)
-        {
-            buffer[1]++;
-            buffer[buffIndex++] = 0;
-        }
-
-        value.CopyTo(buffer[buffIndex..]);
-        return buffIndex + value.Length;
-    }
-
     /// <summary>
     /// Checks that provided input represent correct secp256r1 signature.
     /// </summary>
@@ -103,22 +78,30 @@ public static class Secp256r1
     /// </returns>
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
     {
-        if (input.Length != 160)
+        if (input.Length != Position.End)
             return false;
 
         nint key = 0;
         try
         {
-            Span<byte> buffer = stackalloc byte[2 + 2 * (2 + 32 + 1)]; // Max possible size when DER-encoded
-            ReadOnlySpan<byte> signature = EncodeSignature(input.Span[32..64], input.Span[64..96], buffer);
+            Span<byte> buffer = stackalloc byte[DerHelper.P256SignatureMaxSize];
+            ReadOnlySpan<byte> signature = DerHelper.EncodeP256Signature(
+                r: input.Span[Position.SigR..(Position.SigR + ElementSize)],
+                s: input.Span[Position.SigS..(Position.SigS + ElementSize)],
+                buffer
+            );
 
             fixed (byte* ptr = input.Span)
             fixed (byte* sig = signature)
             {
-                key = TryCreateECKey(ptr + 96, ptr + 128);
+                key = TryCreateECKey(ptr + Position.KeyX, ptr + Position.KeyY);
                 if (key <= 0) return false;
 
-                return BoringSsl.ECDSA_verify(0, ptr, 32, sig, signature.Length, key) != 0;
+                return BoringSsl.ECDSA_verify(
+                    type: 0,
+                    digest: ptr + Position.Hash, digest_len: ElementSize,
+                    sig, signature.Length, key
+                ) != 0;
             }
         }
         finally
