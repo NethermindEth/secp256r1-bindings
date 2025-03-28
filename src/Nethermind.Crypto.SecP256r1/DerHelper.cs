@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2025 Demerzel Solutions Limited
 // SPDX-License-Identifier: LGPL-3.0-only
 
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
 namespace Nethermind.Crypto;
 
 internal static class DerHelper
@@ -31,9 +34,10 @@ internal static class DerHelper
     private static int EncodeUnsignedInteger(ReadOnlySpan<byte> value, Span<byte> buffer)
     {
         // Skip zeroes
-        var valIndex = 0;
-        while (value[valIndex] == 0 && valIndex < value.Length - 1) valIndex++;
-        value = value[valIndex..];
+        var valIndex = BitConverter.IsLittleEndian
+            ? BitOperations.TrailingZeroCount(Unsafe.ReadUnaligned<ulong>(in value[0])) / 8
+            : BitOperations.LeadingZeroCount(Unsafe.ReadUnaligned<ulong>(in value[0])) / 8;
+        value = value[Math.Min(valIndex, value.Length - 1)..];
 
         buffer[0] = 0x02; // INTEGER;
         buffer[1] = (byte)value.Length; // INTEGER length
