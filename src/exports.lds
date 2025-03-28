@@ -9,7 +9,7 @@
         EC_POINT_free;
         BN_bin2bn;
         BN_free;
-        ECDSA_verify;
+        ecdsa_verify_fixed;
     local:
         *;
 };
