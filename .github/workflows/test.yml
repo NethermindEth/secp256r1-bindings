@@ -31,7 +31,7 @@ jobs:
           - library: libsecp256r1.so
             source: libcrypto.so
             exports: exports.lds
-            os: ubuntu-22.04
+            os: ubuntu-20.04
             rid: linux-x64
           - library: libsecp256r1.dylib
             source: libcrypto.dylib
