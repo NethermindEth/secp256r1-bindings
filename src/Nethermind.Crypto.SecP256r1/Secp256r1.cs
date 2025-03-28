@@ -8,9 +8,8 @@ public static class Secp256r1
     private static class Position
     {
         public const int Hash = 0;
-        public const int SigR = Hash + ElementSize;
-        public const int SigS = SigR + ElementSize;
-        public const int KeyX = SigS + ElementSize;
+        public const int Sig = Hash + ElementSize;
+        public const int KeyX = Sig + ElementSize + ElementSize; // sig r and s values
         public const int KeyY = KeyX + ElementSize;
         public const int End = KeyY + ElementSize;
     }
@@ -84,23 +83,14 @@ public static class Secp256r1
         nint key = 0;
         try
         {
-            Span<byte> buffer = stackalloc byte[DerHelper.P256SignatureMaxSize];
-            ReadOnlySpan<byte> signature = DerHelper.EncodeP256Signature(
-                r: input.Span[Position.SigR..(Position.SigR + ElementSize)],
-                s: input.Span[Position.SigS..(Position.SigS + ElementSize)],
-                buffer
-            );
-
             fixed (byte* ptr = input.Span)
-            fixed (byte* sig = signature)
             {
                 key = TryCreateECKey(ptr + Position.KeyX, ptr + Position.KeyY);
                 if (key <= 0) return false;
 
-                return BoringSsl.ECDSA_verify(
-                    type: 0,
+                return BoringSsl.ECDSA_verify_fixed(
                     digest: ptr + Position.Hash, digest_len: ElementSize,
-                    sig, signature.Length, key
+                    sig: ptr+Position.Sig, sig_len: ElementSize * 2, key
                 ) != 0;
             }
         }
