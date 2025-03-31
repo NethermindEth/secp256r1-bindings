@@ -1,0 +1,10 @@
+_EC_KEY_new_by_curve_name
+_EC_KEY_set_public_key
+_EC_KEY_free
+_EC_KEY_get0_group
+_EC_POINT_new
+_EC_POINT_set_affine_coordinates_GFp
+_EC_POINT_free
+_BN_bin2bn
+_BN_free
+_ecdsa_verify_fixed

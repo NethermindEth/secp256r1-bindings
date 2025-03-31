@@ -1,0 +1,15 @@
+{
+    global:
+        EC_KEY_new_by_curve_name;
+        EC_KEY_set_public_key;
+        EC_KEY_free;
+        EC_KEY_get0_group;
+        EC_POINT_new;
+        EC_POINT_set_affine_coordinates_GFp;
+        EC_POINT_free;
+        BN_bin2bn;
+        BN_free;
+        ecdsa_verify_fixed;
+    local:
+        *;
+};

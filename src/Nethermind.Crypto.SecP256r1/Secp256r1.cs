@@ -1,21 +1,65 @@
 // SPDX-FileCopyrightText: 2025 Demerzel Solutions Limited
 // SPDX-License-Identifier: MIT
 
-using System.Buffers;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.Loader;
-
 namespace Nethermind.Crypto;
 
-public static partial class Secp256r1
+public static class Secp256r1
 {
-    private const string LibraryName = "secp256r1";
+    private static class Position
+    {
+        public const int Hash = 0;
+        public const int Sig = Hash + ElementSize;
+        public const int KeyX = Sig + ElementSize + ElementSize; // sig r and s values
+        public const int KeyY = KeyX + ElementSize;
+        public const int End = KeyY + ElementSize;
+    }
 
-    static Secp256r1() => SetLibraryFallbackResolver();
+    private const int ElementSize = 32;
 
-    [LibraryImport(LibraryName, SetLastError = true)]
-    private static unsafe partial byte VerifyBytes(byte* data, int length);
+    /// <returns>
+    /// New key pointer if successfully created,
+    /// <c>0</c> if (x,y) coordinates are not on the curve,
+    /// and negative value in case of other errors.
+    /// </returns>
+    private static unsafe nint TryCreateECKey(byte* x, byte* y)
+    {
+        nint key = 0, bx = 0, by = 0, pt = 0;
+        var success = false;
+
+        try
+        {
+            key = BoringSsl.EC_KEY_new_by_curve_name(BoringSsl.NID_X9_62_prime256v1);
+            if (key == 0)
+                return -1;
+
+            var group = BoringSsl.EC_KEY_get0_group(key);
+
+            pt = BoringSsl.EC_POINT_new(group);
+            if (pt == 0)
+                return -2;
+
+            bx = BoringSsl.BN_bin2bn(x, 32, 0);
+            by = BoringSsl.BN_bin2bn(y, 32, 0);
+            if (bx == 0 || by == 0)
+                return -3;
+
+            if (BoringSsl.EC_POINT_set_affine_coordinates_GFp(group, pt, bx, by, 0) == 0)
+                return 0;
+
+            if (BoringSsl.EC_KEY_set_public_key(key, pt) == 0)
+                return -4;
+
+            success = true;
+            return key;
+        }
+        finally
+        {
+            if (!success && key != 0) BoringSsl.EC_KEY_free(key);
+            if (bx != 0) BoringSsl.BN_free(bx);
+            if (by != 0) BoringSsl.BN_free(by);
+            if (pt != 0) BoringSsl.EC_POINT_free(pt);
+        }
+    }
 
     /// <summary>
     /// Checks that provided input represent correct secp256r1 signature.
@@ -33,42 +77,26 @@ public static partial class Secp256r1
     /// </returns>
     public static unsafe bool VerifySignature(in ReadOnlyMemory<byte> input)
     {
-        using MemoryHandle pin = input.Pin();
-        return VerifyBytes((byte*) pin.Pointer, input.Length) != 0;
-    }
+        if (input.Length != Position.End)
+            return false;
 
-    private static void SetLibraryFallbackResolver()
-    {
-        Assembly assembly = typeof(Secp256r1).Assembly;
-
-        AssemblyLoadContext.GetLoadContext(assembly)!.ResolvingUnmanagedDll += (context, name) =>
+        nint key = 0;
+        try
         {
-            if (context != assembly || !LibraryName.Equals(name, StringComparison.Ordinal))
-                return nint.Zero;
-
-            string platform;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            fixed (byte* ptr = input.Span)
             {
-                name = $"lib{name}.so";
-                platform = "linux";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                name = $"lib{name}.dylib";
-                platform = "osx";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                name = $"{name}.dll";
-                platform = "win";
-            }
-            else
-                throw new PlatformNotSupportedException();
+                key = TryCreateECKey(ptr + Position.KeyX, ptr + Position.KeyY);
+                if (key <= 0) return false;
 
-            var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-
-            return NativeLibrary.Load($"runtimes/{platform}-{arch}/native/{name}", context, DllImportSearchPath.AssemblyDirectory);
-        };
+                return BoringSsl.ECDSA_verify_fixed(
+                    digest: ptr + Position.Hash, digest_len: ElementSize,
+                    sig: ptr+Position.Sig, sig_len: ElementSize * 2, key
+                ) != 0;
+            }
+        }
+        finally
+        {
+            if (key > 0) BoringSsl.EC_KEY_free(key);
+        }
     }
 }

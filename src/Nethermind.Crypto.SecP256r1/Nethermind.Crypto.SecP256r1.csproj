@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>C# bindings for the SecP256r1 (P-256) signature verification using Go crypto/ecdsa package</Description>
+    <Description>C# bindings for the BoringSSL ECDSA signature verification</Description>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <PackageId>Nethermind.Crypto.SecP256r1</PackageId>

@@ -15,6 +15,10 @@ public class Secp256r1Tests
         true
     )]
     [TestCase(
+        "f59d756696b2089fca5969fdfde2674e333765e1dad0a51c8ebbc63f351c4ca5fbed61d441d571e025b2110f490c5c041c7c7aad4499ba0367b722ce3d14ad3980e9abcf1a5374f413ffad173eec5d6ce48ac23fae07f4a50e306fdb87c1f188d8e72a6c138a8c2d2a3a669cbef1a482f3dff19f18dea602d67ead73526cd0b0b423da9fb0e82a196cd096b0ace0acb0cd8733ab049e9e6fee4ca672b8b934d3",
+        true
+    )]
+    [TestCase(
         "3fec5769b5cf4e310a7d150508e82fb8e3eda1c2c94c61492d3bd8aea99e06c9e22466e928fdccef0de49e3503d2657d00494a00e764fd437bdafa05f5922b1fbbb77c6817ccf50748419477e843d5bac67e6a70e97dde5a57e0c983b777e1ad31a80482dadf89de6302b1988c82c29544c9c07bb910596158f6062517eb089a2f54c9a0f348752950094d3228d3b940258c75fe2a413cb70baa21dc2e352fc5",
         true
     )]
@@ -57,42 +61,10 @@ public class Secp256r1Tests
         Assert.That(Secp256r1.VerifySignature(bytes), Is.EqualTo(isValid));
     }
 
-    [Test]
-    // Generated signatures will be still be non-deterministic due to k randomness.
-    [TestCase("619A6C9ABD7985F2175EF0EDF3DBC7CFB9FCB3DAE83991CCFB00D10DFF23E956", 100)]
-    [TestCase("747B0D580A8FCE53AE3166FCBDB2123E4488B4BAAD007357D8F60626D95C0914", 100)]
-    [TestCase("71FE3CF83CCDE61933CA269715D8AEC760F6B7FA5C13D357E2D2F5AD0E8FCA29", 100)]
-    [TestCase("E10D2BD764C3E07B049E313BD38783D4060EBD36D988CE8B25A2B8646D54E0FC", 100)]
-    [TestCase("4224A93AF42729459D6C366AD24800259948A94717E4178FC7CDB709596F5ACA", 100)]
-    public void Verifies_ecdsa_generated_signatures(string d, int msgCount)
+    [TestCaseSource(nameof(RandomECDsaInputs))]
+    public void Verifies_random_valid_signature(byte[] input)
     {
-        using var ecdsa = ECDsa.Create(new ECParameters
-        {
-            Curve = ECCurve.NamedCurves.nistP256,
-            D = Convert.FromHexString(d)
-        });
-        ECParameters parameters = ecdsa.ExportParameters(false);
-
-        var hashes = Enumerable.Range(1, msgCount).Select(i => SHA256.HashData(BitConverter.GetBytes(i))).ToArray();
-        for (var i = 0; i < hashes.Length; i++)
-        {
-            var hash = hashes[i];
-            var sig = ecdsa.SignHash(hash);
-            var input = Enumerable.Empty<byte>()
-                .Concat(hash)
-                .Concat(sig)
-                .Concat(parameters.Q.X!)
-                .Concat(parameters.Q.Y!)
-                .ToArray();
-
-            using var temp = ECDsa.Create(new ECParameters
-            {
-                Curve = ECCurve.NamedCurves.nistP256,
-                Q = { X = parameters.Q.X, Y = parameters.Q.Y }
-            });
-
-            Assert.That(Secp256r1.VerifySignature(input), Is.True, $"input #{i} is 0x{Convert.ToHexString(input)}.");
-        }
+        Assert.That(Secp256r1.VerifySignature(input), Is.True);
     }
 
     [Theory]
@@ -106,5 +78,23 @@ public class Secp256r1Tests
         var bytes = Enumerable.Range(0, length).Select(i => (byte)i).ToArray();
 
         Assert.That(Secp256r1.VerifySignature(bytes), Is.False);
+    }
+
+    public static IEnumerable<TestCaseData> RandomECDsaInputs()
+    {
+        var rng = RandomNumberGenerator.Create();
+        var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+
+        for (var i = 0; i < 1000; i++)
+        {
+            var hash = new byte[32];
+            rng.GetBytes(hash);
+
+            ECParameters pub = ecdsa.ExportParameters(false);
+            byte[] sig = ecdsa.SignHash(hash, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] input = [.. hash, .. sig, .. pub.Q.X!, .. pub.Q.Y!];
+
+            yield return new TestCaseData(input).SetName(Convert.ToHexString(input));
+        }
     }
 }
