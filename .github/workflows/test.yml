@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       - name: Configure build
@@ -73,7 +73,7 @@ jobs:
         shell: bash
         run: mv -f boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
       - name: Test bindings
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
         run: dotnet run -c release
@@ -94,7 +94,7 @@ jobs:
       BUILD_CONFIG: release
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -108,16 +108,16 @@ jobs:
           mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
           mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
       - name: Install dependencies
         working-directory: src
         run: dotnet restore
       - name: Build
         working-directory: src/Nethermind.Crypto.SecP256r1
-        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore -p:Commit=$GITHUB_SHA
+        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore
       - name: Test
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet run -c ${{ env.BUILD_CONFIG }} --no-restore
+        run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
       - name: Publish
         working-directory: src/Nethermind.Crypto.SecP256r1
         run: |
