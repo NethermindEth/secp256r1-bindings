@@ -36,7 +36,7 @@ jobs:
           - library: libsecp256r1.dylib
             source: libcrypto.dylib
             exports: exports.exp
-            os: macos-13
+            os: macos-15-intel
             rid: osx-x64
           - library: secp256r1.dll
             source: crypto.dll
