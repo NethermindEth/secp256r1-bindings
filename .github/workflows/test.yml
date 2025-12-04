@@ -3,7 +3,7 @@ name: Test / Publish
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [test/win]
   workflow_dispatch:
     inputs:
       publish:
@@ -18,26 +18,26 @@ jobs:
     strategy:
       matrix:
         include:
-          - library: libsecp256r1.so
-            source: libcrypto.so
-            exports: exports.lds
-            os: ubuntu-22.04-arm
-            rid: linux-arm64
-          - library: libsecp256r1.so
-            source: libcrypto.so
-            exports: exports.lds
-            os: ubuntu-22.04
-            rid: linux-x64
-          - library: libsecp256r1.dylib
-            source: libcrypto.dylib
-            exports: exports.exp
-            os: macos-latest
-            rid: osx-arm64
-          - library: libsecp256r1.dylib
-            source: libcrypto.dylib
-            exports: exports.exp
-            os: macos-15-intel
-            rid: osx-x64
+          # - library: libsecp256r1.so
+          #   source: libcrypto.so
+          #   exports: exports.lds
+          #   os: ubuntu-22.04-arm
+          #   rid: linux-arm64
+          # - library: libsecp256r1.so
+          #   source: libcrypto.so
+          #   exports: exports.lds
+          #   os: ubuntu-22.04
+          #   rid: linux-x64
+          # - library: libsecp256r1.dylib
+          #   source: libcrypto.dylib
+          #   exports: exports.exp
+          #   os: macos-latest
+          #   rid: osx-arm64
+          # - library: libsecp256r1.dylib
+          #   source: libcrypto.dylib
+          #   exports: exports.exp
+          #   os: macos-15-intel
+          #   rid: osx-x64
           - library: secp256r1.dll
             source: crypto.dll
             exports: exports.def
@@ -87,7 +87,7 @@ jobs:
 
   publish:
     name: Publish
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: [build]
     if: inputs.publish
     env:
@@ -102,10 +102,7 @@ jobs:
       - name: Move artifacts
         working-directory: src/Nethermind.Crypto.SecP256r1/runtimes
         run: |
-          mv -f linux-arm64/libsecp256r1.so linux-arm64/native/libsecp256r1.so
-          mv -f linux-x64/libsecp256r1.so linux-x64/native/libsecp256r1.so
-          mv -f osx-arm64/libsecp256r1.dylib osx-arm64/native/libsecp256r1.dylib
-          mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
+
           mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
@@ -118,8 +115,3 @@ jobs:
       - name: Test
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
         run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
-      - name: Publish
-        working-directory: src/Nethermind.Crypto.SecP256r1
-        run: |
-          dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
-          dotnet nuget push bin/${{ env.BUILD_CONFIG }}/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
