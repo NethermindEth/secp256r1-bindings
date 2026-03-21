@@ -3,7 +3,7 @@
 
 namespace Nethermind.Crypto;
 
-public static class Secp256r1
+public static class SecP256r1
 {
     private static class Position
     {
@@ -90,7 +90,7 @@ public static class Secp256r1
 
                 return BoringSsl.ECDSA_verify_fixed(
                     digest: ptr + Position.Hash, digest_len: ElementSize,
-                    sig: ptr+Position.Sig, sig_len: ElementSize * 2, key
+                    sig: ptr + Position.Sig, sig_len: ElementSize * 2, key
                 ) != 0;
             }
         }

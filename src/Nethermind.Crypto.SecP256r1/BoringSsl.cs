@@ -15,7 +15,7 @@ internal static partial class BoringSsl
 
     private static void SetLibraryFallbackResolver()
     {
-        Assembly assembly = typeof(Secp256r1).Assembly;
+        Assembly assembly = typeof(SecP256r1).Assembly;
 
         AssemblyLoadContext.GetLoadContext(assembly)!.ResolvingUnmanagedDll += (context, name) =>
         {

@@ -6,9 +6,8 @@ using NUnit.Framework;
 
 namespace Nethermind.Crypto.Tests;
 
-public class Secp256r1Tests
+public class SecP256r1Tests
 {
-    [Theory]
     // https://github.com/paradigmxyz/alphanet/blob/7bbdcc0bbb28230b7be6d15f32552fcd885654d5/crates/precompile/src/secp256r1.rs#L154
     [TestCase(
         "4cee90eb86eaa050036147a12d49004b6b9c72bd725d39d4785011fe190f0b4da73bd4903f0ce3b639bbbf6e8e80d16931ff4bcf5993d58468e8fb19086e8cac36dbcd03009df8c59286b162af3bd7fcc0450c9aa81be5d10d312af6c66b1d604aebd3099c618202fcfe16ae7770b0c49ab5eadf74b754204a3bb6060e44eff37618b065f9832de4ca6ca971a7a1adc826d0f7c00181a5fb2ddf79ae00b4e10e",
@@ -58,16 +57,15 @@ public class Secp256r1Tests
     {
         var bytes = Convert.FromHexString(input);
 
-        Assert.That(Secp256r1.VerifySignature(bytes), Is.EqualTo(isValid));
+        Assert.That(SecP256r1.VerifySignature(bytes), Is.EqualTo(isValid));
     }
 
     [TestCaseSource(nameof(RandomECDsaInputs))]
     public void Verifies_random_valid_signature(byte[] input)
     {
-        Assert.That(Secp256r1.VerifySignature(input), Is.True);
+        Assert.That(SecP256r1.VerifySignature(input), Is.True);
     }
 
-    [Theory]
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(159)]
@@ -77,7 +75,7 @@ public class Secp256r1Tests
     {
         var bytes = Enumerable.Range(0, length).Select(i => (byte)i).ToArray();
 
-        Assert.That(Secp256r1.VerifySignature(bytes), Is.False);
+        Assert.That(SecP256r1.VerifySignature(bytes), Is.False);
     }
 
     public static IEnumerable<TestCaseData> RandomECDsaInputs()
