@@ -5,13 +5,13 @@
 
 C# bindings for the [BoringSSL](https://github.com/google/boringssl) ECDSA signature verification.
 
-### Build
+## Build
 
 - Checkout the repository, including nested BoringSSL submodule.
 
 - Copy `CMakeLists.txt` and all `export.*` files from the `src` folder to `src/boringssl`, replacing existing files.
 
-- Build the BoringSSL library in Release mode per [documentation](https://boringssl.googlesource.com/boringssl/+/HEAD/BUILDING.md):
+- Build the BoringSSL library in Release mode per [docs](https://github.com/google/boringssl/blob/main/BUILDING.md):
 
   ```bash
   cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=1
@@ -25,3 +25,7 @@ C# bindings for the [BoringSSL](https://github.com/google/boringssl) ECDSA signa
   ```bash
   dotnet build src/Nethermind.Crypto.SecP256r1
   ```
+
+## License
+
+This project is licensed under the [MIT](./LICENSE) license and contains dynamically linked BoringSSL binaries licensed under the [Apache-2.0](https://github.com/google/boringssl/blob/main/LICENSE) license.
