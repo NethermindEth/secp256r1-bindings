@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           submodules: true
       - name: Configure build
@@ -57,7 +57,7 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
       - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: seanmiddleditch/gha-setup-ninja@v6
       - name: Setup NASM
         uses: ilammy/setup-nasm@v1
       - name: Build library
@@ -73,12 +73,12 @@ jobs:
         shell: bash
         run: mv -f boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
       - name: Test bindings
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
         run: dotnet run -c release
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.rid }}
           path: src/Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
@@ -94,9 +94,9 @@ jobs:
       BUILD_CONFIG: release
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: src/Nethermind.Crypto.SecP256r1/runtimes
       - name: Move artifacts
@@ -108,7 +108,7 @@ jobs:
           mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
           mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
       - name: Install dependencies
         working-directory: src
         run: dotnet restore

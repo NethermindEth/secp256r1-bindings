@@ -84,9 +84,9 @@ internal static partial class BoringSsl
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void BN_free(nint bn);
 
-    [LibraryImport(LibraryName, EntryPoint = "ecdsa_verify_fixed")]
+    [LibraryImport(LibraryName, EntryPoint = "ECDSA_verify_p1363")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    public static unsafe partial int ECDSA_verify_fixed(byte* digest, nint digest_len, byte* sig, nint sig_len, nint key);
+    public static unsafe partial int ECDSA_verify_p1363(byte* digest, nint digest_len, byte* sig, nint sig_len, nint key);
 
     public const int NID_X9_62_prime256v1 = 415;
 }

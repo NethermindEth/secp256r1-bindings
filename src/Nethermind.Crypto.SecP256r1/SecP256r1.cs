@@ -88,7 +88,7 @@ public static class SecP256r1
                 key = TryCreateECKey(ptr + Position.KeyX, ptr + Position.KeyY);
                 if (key <= 0) return false;
 
-                return BoringSsl.ECDSA_verify_fixed(
+                return BoringSsl.ECDSA_verify_p1363(
                     digest: ptr + Position.Hash, digest_len: ElementSize,
                     sig: ptr + Position.Sig, sig_len: ElementSize * 2, key
                 ) != 0;
