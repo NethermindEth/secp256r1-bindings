@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       publish:
@@ -16,116 +18,51 @@ on:
           - Production
 
 jobs:
-  build:
-    name: Build native libraries
+  test:
+    name: Test
     strategy:
       matrix:
-        include:
-          - library: libsecp256r1.so
-            source: libcrypto.so
-            exports: exports.lds
-            os: ubuntu-22.04-arm
-            rid: linux-arm64
-          - library: libsecp256r1.so
-            source: libcrypto.so
-            exports: exports.lds
-            os: ubuntu-22.04
-            rid: linux-x64
-          - library: libsecp256r1.dylib
-            source: libcrypto.dylib
-            exports: exports.exp
-            os: macos-latest
-            rid: osx-arm64
-          - library: libsecp256r1.dylib
-            source: libcrypto.dylib
-            exports: exports.exp
-            os: macos-15-intel
-            rid: osx-x64
-          - library: secp256r1.dll
-            source: crypto.dll
-            exports: exports.def
-            os: windows-latest
-            rid: win-x64
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - macos-26-intel
+          - windows-latest
+          - windows-11-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
-          submodules: true
-      - name: Configure build
-        shell: bash
-        run: |
-          mv -f src/CMakeLists.txt src/boringssl/CMakeLists.txt
-          mv -f src/${{ matrix.exports }} src/boringssl/${{ matrix.exports }}
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
-      - name: Setup NASM
-        uses: ilammy/setup-nasm@v1
-      - name: Build library
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          source-dir: src/boringssl
-          generator: Ninja
-          options: |
-            CMAKE_BUILD_TYPE=Release
-            BUILD_SHARED_LIBS=1
-      - name: Move built binary
-        working-directory: src
-        shell: bash
-        run: mv -f boringssl/build/${{ matrix.source }} Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
-      - name: Setup .NET
+          lfs: true
+
+      - name: Set up .NET
         uses: actions/setup-dotnet@v6
-      - name: Test bindings
+
+      - name: Test
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet run -c release
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.rid }}
-          path: src/Nethermind.Crypto.SecP256r1/runtimes/${{ matrix.rid }}/native/${{ matrix.library }}
-          retention-days: 2
-          if-no-files-found: error
+        run: dotnet test -c release
 
   publish:
     name: Publish
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'No' || github.event_name == 'release'
     runs-on: ubuntu-latest
-    needs: [build]
-    if: github.event_name == 'workflow_dispatch' && inputs.publish != 'No'
-    env:
-      BUILD_CONFIG: release
-      NUGET_URL: ${{ inputs.publish == 'Staging' && 'https://int.nugettest.org' || 'https://www.nuget.org' }}
-      NUGET_SOURCE: ${{ inputs.publish == 'Staging' && 'https://apiint.nugettest.org' || 'https://api.nuget.org' }}/v3/index.json
     permissions:
       contents: read
       id-token: write
+    env:
+      NUGET_URL: ${{ github.event.inputs.publish == 'Staging' && 'https://int.nugettest.org' || 'https://www.nuget.org' }}
+      NUGET_SOURCE: ${{ github.event.inputs.publish == 'Staging' && 'https://apiint.nugettest.org' || 'https://api.nuget.org' }}/v3/index.json
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
         with:
-          path: src/Nethermind.Crypto.SecP256r1/runtimes
-      - name: Move artifacts
-        working-directory: src/Nethermind.Crypto.SecP256r1/runtimes
-        run: |
-          mv -f linux-arm64/libsecp256r1.so linux-arm64/native/libsecp256r1.so
-          mv -f linux-x64/libsecp256r1.so linux-x64/native/libsecp256r1.so
-          mv -f osx-arm64/libsecp256r1.dylib osx-arm64/native/libsecp256r1.dylib
-          mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
-          mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
+          lfs: true
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
-      - name: Install dependencies
-        working-directory: src
-        run: dotnet restore
-      - name: Build
-        working-directory: src/Nethermind.Crypto.SecP256r1
-        run: dotnet build -c ${{ env.BUILD_CONFIG }} --no-restore
-      - name: Test
-        working-directory: src/Nethermind.Crypto.SecP256r1.Tests
-        run: dotnet test -c ${{ env.BUILD_CONFIG }} --no-restore
+
       - name: NuGet login
         uses: nuget/login@v1
         id: login
@@ -133,9 +70,10 @@ jobs:
           user: ${{ secrets.NUGET_USER }}
           audience: ${{ env.NUGET_URL }}
           token-service-url: ${{ env.NUGET_URL }}/api/v2/token
+
       - name: Publish
-        working-directory: src/Nethermind.Crypto.SecP256r1
+        working-directory: src
         run: |
-          dotnet pack -c ${{ env.BUILD_CONFIG }} --no-build
-          dotnet nuget push bin/${{ env.BUILD_CONFIG }}/*.nupkg \
+          dotnet pack ./Nethermind.Crypto.SecP256r1 -c release
+          dotnet nuget push ./Nethermind.Crypto.SecP256r1/bin/release/*.nupkg \
             -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s ${{ env.NUGET_SOURCE }}
