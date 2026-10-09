@@ -32,4 +32,6 @@ The prebuilt BoringSSL binaries in `src/Nethermind.Crypto.SecP256r1/runtimes` ar
 
 ## License
 
-This project is licensed under the [MIT](./LICENSE) license and contains dynamically linked BoringSSL binaries licensed under the [Apache-2.0](https://github.com/google/boringssl/blob/main/LICENSE) license.
+This project is licensed under the [MIT](https://github.com/nethermindeth/secp256r1-bindings/blob/main/LICENSE) license.
+
+The package also ships prebuilt BoringSSL binaries, used under [Apache-2.0](https://github.com/google/boringssl/blob/main/LICENSE). Those binaries include Fiat Cryptography, also used under Apache-2.0. See [THIRD-PARTY-NOTICES](https://github.com/nethermindeth/secp256r1-bindings/blob/main/THIRD-PARTY-NOTICES) for the full texts.
