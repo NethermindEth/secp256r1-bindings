@@ -1,4 +1,4 @@
-# secp256r1-bindings
+# secp256r1 bindings for BoringSSL
 
 [![Test](https://github.com/nethermindeth/secp256r1-bindings/actions/workflows/test-publish.yml/badge.svg)](https://github.com/nethermindeth/secp256r1-bindings/actions/workflows/test-publish.yml)
 [![Nethermind.Crypto.SecP256r1](https://img.shields.io/nuget/v/Nethermind.Crypto.SecP256r1)](https://www.nuget.org/packages/Nethermind.Crypto.SecP256r1)
