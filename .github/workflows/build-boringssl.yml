@@ -1,6 +1,8 @@
 name: Build BoringSSL
 
 on:
+  push:
+    branches: [ci/build-boringssl]
   workflow_dispatch:
     inputs:
       create-pr:
@@ -139,7 +141,7 @@ jobs:
   create-pr:
     name: Create a pull request
     needs: [build-linux, build-macos, build-windows]
-    if: github.event.inputs.create-pr == 'true'
+    if: github.event_name == 'push' || github.event.inputs.create-pr == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
