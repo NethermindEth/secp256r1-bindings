@@ -1,0 +1,179 @@
+name: Build BoringSSL
+
+on:
+  workflow_dispatch:
+    inputs:
+      create-pr:
+        description: Create a pull request
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  RETENTION: 7
+
+jobs:
+  build-linux:
+    name: Linux build
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Build
+        working-directory: src/boringssl
+        run: |
+          cp -f ../CMakeLists.txt ../exports.lds .
+          rm -rf build
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=1
+          cmake --build build --parallel
+          mv build/libcrypto.so build/libsecp256r1.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-${{ matrix.arch }}
+          path: src/boringssl/build/libsecp256r1.so
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  build-macos:
+    name: macOS build
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Build
+        working-directory: src/boringssl
+        run: |
+          cp -f ../CMakeLists.txt ../exports.exp .
+          rm -rf build
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch == 'arm64' && 'arm64' || 'x86_64' }} \
+            -DBUILD_SHARED_LIBS=1
+          cmake --build build --parallel
+          mv build/libcrypto.dylib build/libsecp256r1.dylib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: osx-${{ matrix.arch }}
+          path: src/boringssl/build/libsecp256r1.dylib
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  build-windows:
+    name: Windows build
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-2022' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Set up Ninja
+        if: matrix.arch == 'x64'
+        uses: seanmiddleditch/gha-setup-ninja@v6
+
+      - name: Set up NASM
+        if: matrix.arch == 'x64'
+        uses: ilammy/setup-nasm@v1
+
+      # BoringSSL's AArch64 assembly is GNU syntax, which MSVC cannot assemble,
+      # so arm64 is built with clang-cl to avoid falling back to generic C
+      - name: Build
+        working-directory: src/boringssl
+        run: |
+          cp -Force ../CMakeLists.txt, ../exports.def .
+          if (Test-Path build) { rd -Recurse build }
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_SHARED_LIBS=1 `
+            ${{ matrix.arch == 'arm64' && '-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl' || '' }}
+          cmake --build build
+          rni build/crypto.dll -NewName secp256r1.dll
+
+      - name: Verify assembly
+        if: matrix.arch == 'arm64'
+        working-directory: src/boringssl/build
+        shell: bash
+        run: |
+          headers=$(dumpbin -nologo -headers secp256r1.dll)
+          grep -q 'AA64 machine (ARM64)' <<< "$headers"
+          symbols=$(llvm-nm $(find . -name 'p256-armv8-asm-win.S.obj'))
+          grep -q ' T ecp_nistz256_mul_mont' <<< "$symbols"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: win-${{ matrix.arch }}
+          path: src/boringssl/build/secp256r1.dll
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  create-pr:
+    name: Create a pull request
+    needs: [build-linux, build-macos, build-windows]
+    if: github.event.inputs.create-pr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: src/Nethermind.Crypto.SecP256r1/runtimes
+
+      - name: Move artifacts
+        working-directory: src/Nethermind.Crypto.SecP256r1/runtimes
+        run: |
+          mv -f linux-arm64/libsecp256r1.so linux-arm64/native/libsecp256r1.so
+          mv -f linux-x64/libsecp256r1.so linux-x64/native/libsecp256r1.so
+          mv -f osx-arm64/libsecp256r1.dylib osx-arm64/native/libsecp256r1.dylib
+          mv -f osx-x64/libsecp256r1.dylib osx-x64/native/libsecp256r1.dylib
+          mv -f win-arm64/secp256r1.dll win-arm64/native/secp256r1.dll
+          mv -f win-x64/secp256r1.dll win-x64/native/secp256r1.dll
+
+      - name: Create a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD:src/boringssl)
+          ref=$(git ls-remote --tags https://github.com/google/boringssl | awk -v sha=$sha '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2; exit }')
+          ref=${ref:-${sha:0:12}}
+          head_branch=feature/boringssl-build-$GITHUB_RUN_NUMBER-$GITHUB_RUN_ATTEMPT
+          title="chore(deps): update BoringSSL binaries to $ref"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b $head_branch
+          git add -A
+          git commit -am "Update BoringSSL binaries"
+          git push origin $head_branch
+          gh pr create -B $GITHUB_REF_NAME -H $head_branch -t "$title" \
+            -b "Built BoringSSL $ref."
