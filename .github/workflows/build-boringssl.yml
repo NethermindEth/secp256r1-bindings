@@ -61,6 +61,8 @@ jobs:
         with:
           submodules: true
 
+      # Without an explicit deployment target, the minimum macOS version
+      # defaults to the runner's SDK; 15.0 matches .NET 10's minimum
       - name: Build
         working-directory: src/boringssl
         run: |
@@ -69,6 +71,7 @@ jobs:
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch == 'arm64' && 'arm64' || 'x86_64' }} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
             -DBUILD_SHARED_LIBS=1
           cmake --build build --parallel
           mv build/libcrypto.dylib build/libsecp256r1.dylib
