@@ -39,6 +39,14 @@ jobs:
           cmake --build build --parallel
           mv build/libcrypto.so build/libsecp256r1.so
 
+      - name: Verify symbol binding
+        working-directory: src/boringssl/build
+        run: |
+          if readelf -rW libsecp256r1.so | grep -E 'JUMP_SLOT|GLOB_DAT' | grep -E ' (EC|BN|ECDSA)_'; then
+            echo "::error::Exported functions are bound at run time and can be replaced by another libcrypto"
+            exit 1
+          fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

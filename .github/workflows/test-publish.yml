@@ -21,6 +21,7 @@ jobs:
   test:
     name: Test
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -42,6 +43,15 @@ jobs:
       - name: Test
         working-directory: src/Nethermind.Crypto.SecP256r1.Tests
         run: dotnet test -c release
+
+      # Hosts such as Nix-built apphosts link libssl, which puts OpenSSL's libcrypto in the global symbol scope
+      - name: Test with OpenSSL loaded globally
+        if: runner.os == 'Linux'
+        working-directory: src/Nethermind.Crypto.SecP256r1.Tests
+        run: |
+          libcrypto=$(ldconfig -p | awk '$1 == "libcrypto.so.3" { print $NF; exit }')
+          test -n "$libcrypto"
+          LD_PRELOAD="$libcrypto" dotnet test -c release
 
   publish:
     name: Publish
