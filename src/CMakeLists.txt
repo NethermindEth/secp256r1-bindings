@@ -142,7 +142,9 @@ if(WIN32)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-exported_symbols_list,../exports.exp")
 else()
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=../exports.lds")
+  # -Bsymbolic binds the library's calls to its own exported functions at link time. Without it, a process that
+  # already has OpenSSL's libcrypto in the global symbol scope replaces EC_*/BN_* here with OpenSSL's.
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=../exports.lds -Wl,-Bsymbolic")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
